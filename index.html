@@ -143,6 +143,10 @@
             font-size: 24px;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .mobileBtn:active {
+            background-color: rgba(255, 255, 255, 0.4);
         }
         .gameOverBtn {
             width: 200px;
@@ -156,6 +160,33 @@
             font-size: 20px;
             margin: 10px;
             cursor: pointer;
+        }
+        /* Новые стили для перетаскиваемых кнопок */
+        .draggable-btn {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            user-select: none;
+            z-index: 20;
+            touch-action: none;
+        }
+        .draggable-btn:active {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        #powerBtn {
+            right: 20px;
+            bottom: 120px;
+        }
+        #pauseBtn {
+            right: 20px;
+            bottom: 220px;
         }
     </style>
 </head>
@@ -198,6 +229,10 @@
             <div class="mobileBtn" id="shootBtn">⚡</div>
             <div class="mobileBtn" id="rightBtn">→</div>
         </div>
+        
+        <!-- Новые перетаскиваемые кнопки -->
+        <div class="draggable-btn" id="powerBtn">S</div>
+        <div class="draggable-btn" id="pauseBtn">II</div>
     </div>
 
     <script>
@@ -800,6 +835,12 @@
             const leftBtn = document.getElementById('leftBtn');
             const rightBtn = document.getElementById('rightBtn');
             const shootBtn = document.getElementById('shootBtn');
+            const powerBtn = document.getElementById('powerBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            
+            // Показываем перетаскиваемые кнопки на мобильных устройствах
+            powerBtn.style.display = 'flex';
+            pauseBtn.style.display = 'flex';
             
             leftBtn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
@@ -826,6 +867,79 @@
                 shoot();
             });
             
+            powerBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                activatePowerUp();
+            });
+            
+            pauseBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (paused) {
+                    resumeGame();
+                } else {
+                    pauseGame();
+                }
+            });
+            
+            // Добавляем обработчики для перетаскивания кнопок
+            function makeDraggable(element) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                
+                element.addEventListener('touchstart', dragStart, { passive: false });
+                element.addEventListener('mousedown', dragStart);
+                
+                function dragStart(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (e.type === 'touchstart') {
+                        pos3 = e.touches[0].clientX;
+                        pos4 = e.touches[0].clientY;
+                    } else {
+                        pos3 = e.clientX;
+                        pos4 = e.clientY;
+                    }
+                    
+                    document.addEventListener('touchmove', dragElement, { passive: false });
+                    document.addEventListener('touchend', closeDragElement);
+                    document.addEventListener('mousemove', dragElement);
+                    document.addEventListener('mouseup', closeDragElement);
+                }
+                
+                function dragElement(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    let clientX, clientY;
+                    if (e.type === 'touchmove') {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+                    
+                    pos1 = pos3 - clientX;
+                    pos2 = pos4 - clientY;
+                    pos3 = clientX;
+                    pos4 = clientY;
+                    
+                    element.style.top = (element.offsetTop - pos2) + "px";
+                    element.style.left = (element.offsetLeft - pos1) + "px";
+                }
+                
+                function closeDragElement() {
+                    document.removeEventListener('touchmove', dragElement);
+                    document.removeEventListener('touchend', closeDragElement);
+                    document.removeEventListener('mousemove', dragElement);
+                    document.removeEventListener('mouseup', closeDragElement);
+                }
+            }
+            
+            makeDraggable(powerBtn);
+            makeDraggable(pauseBtn);
+            
+            // Для десктопных устройств тоже добавляем обработчики
             leftBtn.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 controls.left = true;
@@ -859,6 +973,20 @@
             shootBtn.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 shoot();
+            });
+            
+            powerBtn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                activatePowerUp();
+            });
+            
+            pauseBtn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                if (paused) {
+                    resumeGame();
+                } else {
+                    pauseGame();
+                }
             });
         }
         
@@ -938,11 +1066,24 @@
                     };
                 } else {
                     const img = new Image();
+                    // Улучшаем качество текстур для мобильных устройств
                     img.onload = () => {
+                        // Создаем canvas для улучшения качества текстуры
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = img.width * 2;
+                        tempCanvas.height = img.height * 2;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        
+                        // Улучшаем качество изображения
+                        tempCtx.imageSmoothingEnabled = true;
+                        tempCtx.webkitImageSmoothingEnabled = true;
+                        tempCtx.mozImageSmoothingEnabled = true;
+                        tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+                        
                         if (asset.name.startsWith('player')) {
-                            textures.player[asset.name] = img;
+                            textures.player[asset.name] = tempCanvas;
                         } else {
-                            textures[asset.name] = img;
+                            textures[asset.name] = tempCanvas;
                         }
                         assetLoaded();
                     };
@@ -1158,6 +1299,10 @@
             ctx.clearRect(0, 0, gameWidth, gameHeight);
             
             if (textures.background) {
+                // Улучшаем качество фона
+                ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(textures.background, 0, 0, gameWidth, gameHeight);
             }
             
@@ -1179,6 +1324,10 @@
             }
             
             if (bossActive && warningTimer <= 0 && textures.boss) {
+                // Улучшаем качество босса
+                ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.boss,
                     bossPos.x,
@@ -1224,6 +1373,10 @@
                 
                 const texture = bullet.powered ? textures.bulletPowered : textures.bullet;
                 if (texture) {
+                    // Улучшаем качество пуль
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.webkitImageSmoothingEnabled = true;
+                    ctx.mozImageSmoothingEnabled = true;
                     ctx.drawImage(
                         texture,
                         bullet.x,
@@ -1237,6 +1390,10 @@
             obstacles.forEach(obstacle => {
                 if (!obstacle || !textures.obstacle) return;
                 
+                // Улучшаем качество препятствий
+                ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.obstacle,
                     obstacle.x,
@@ -1249,6 +1406,10 @@
             coins.forEach(coin => {
                 if (!coin || !textures.coin) return;
                 
+                // Улучшаем качество монет
+                ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.coin,
                     coin.x,
@@ -1261,6 +1422,10 @@
             coins2.forEach(coin => {
                 if (!coin || !textures.coin2) return;
                 
+                // Улучшаем качество редких монет
+                ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.coin2,
                     coin.x,
@@ -1273,6 +1438,10 @@
             bonuses.forEach(bonus => {
                 if (!bonus || !textures.heart) return;
                 
+                // Улучшаем качество бонусов
+                ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.heart,
                     bonus.x,
@@ -1311,6 +1480,10 @@
             }
             
             if (playerTexture) {
+                // Улучшаем качество игрока
+                ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     playerTexture,
                     playerPos.x,
@@ -1326,6 +1499,10 @@
             
             if (textures.heart) {
                 for (let i = 0; i < lives; i++) {
+                    // Улучшаем качество сердечек
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.webkitImageSmoothingEnabled = true;
+                    ctx.mozImageSmoothingEnabled = true;
                     ctx.drawImage(
                         textures.heart,
                         10 + i * (gameWidth * 0.03),
@@ -1394,6 +1571,14 @@
             canvas.width = gameWidth;
             canvas.height = gameHeight;
             
+            // Улучшаем качество рендеринга на мобильных устройствах
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = gameWidth * dpr;
+            canvas.height = gameHeight * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = gameWidth + 'px';
+            canvas.style.height = gameHeight + 'px';
+            
             loadAssets();
             setupGameOverControls();
             
@@ -1405,6 +1590,14 @@
                 gameHeight = window.innerHeight;
                 canvas.width = gameWidth;
                 canvas.height = gameHeight;
+                
+                // Снова применяем улучшение качества при ресайзе
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = gameWidth * dpr;
+                canvas.height = gameHeight * dpr;
+                ctx.scale(dpr, dpr);
+                canvas.style.width = gameWidth + 'px';
+                canvas.style.height = gameHeight + 'px';
                 
                 if (textures.background) {
                     setupGame();
