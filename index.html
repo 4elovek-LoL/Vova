@@ -642,13 +642,13 @@
                 buttonsDiv.style.flexDirection = 'column';
                 buttonsDiv.innerHTML = '';
                 
-                const restartBtn = document.createElement('div');
-                restartBtn.className = 'gameOverBtn';
-                restartBtn.textContent = 'Рестарт (F)';
-                restartBtn.onclick = function() {
-                    document.getElementById('gameOverScreen').style.display = 'none';
-                    resetGame();
-                    startGame();
+                const exitBtn1 = document.createElement('div');
+                exitBtn.className = 'gameOverBtn';
+                exitBtn.textContent = 'Рестарт (F)';
+                exitBtn.onclick = function() {
+                    if (confirm('Перезапустить?')) {
+                        window.location.href = 'https://4elovek-lol.github.io/Vova/';
+                    }
                 };
                 
                 const exitBtn = document.createElement('div');
