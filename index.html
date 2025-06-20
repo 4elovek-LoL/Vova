@@ -1059,16 +1059,19 @@
         
         // Setup game over controls
         function setupGameOverControls() {
-            const gameOverScreen = document.getElementById('gameOverScreen');
-            
-            gameOverScreen.addEventListener('click', (e) => {
-                if (e.target === gameOverScreen || e.target.tagName === 'P') {
-                    document.getElementById('gameOverScreen').style.display = 'none';
-                    resetGame();
-                    startGame();
-                }
-            });
-        }
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    
+    // Убираем обработчик клика по всему экрану
+    gameOverScreen.onclick = null;
+    
+    // Добавляем обработчик только для кнопки
+    const restartBtn = document.querySelector('.gameOverBtn');
+    if (restartBtn) {
+        restartBtn.onclick = function() {
+            window.location.href = 'index.html';
+        };
+    }
+}
         
         // Load all assets
         function loadAssets() {
