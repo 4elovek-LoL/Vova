@@ -281,6 +281,40 @@
             margin: 10px;
             cursor: pointer;
         }
+        
+        /* Стили для кнопок управления интерфейсом */
+        #interfaceControls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .interfaceBtn {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            padding: 8px 12px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            text-align: center;
+        }
+        
+        .interfaceBtn:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .controlsHidden .control-btn {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -324,6 +358,12 @@
         <div class="control-btn" id="shootBtn">⚡</div>
         <div class="control-btn" id="powerBtn">S</div>
         <div class="control-btn" id="pauseBtn">II</div>
+        
+        <!-- Кнопки управления интерфейсом -->
+        <div id="interfaceControls">
+            <div class="interfaceBtn" id="toggleDragBtn">Отключить перетаскивание</div>
+            <div class="interfaceBtn" id="toggleControlsBtn">Скрыть кнопки</div>
+        </div>
     </div>
 
     <script>
@@ -366,6 +406,8 @@
         let bestScore = 0;
         let isMobile = false;
         let isTablet = false;
+        let dragEnabled = true;
+        let controlsVisible = true;
         
         // Sizes
         let playerSize = 0;
@@ -566,30 +608,6 @@
             }
         }
         
-        // Update particles
-        function updateParticles() {
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                if (!p) {
-                    particles.splice(i, 1);
-                    continue;
-                }
-                
-                p.x += p.dx;
-                p.y += p.dy;
-                p.life -= 1;
-                
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
-                
-                if (p.life <= 0) {
-                    particles.splice(i, 1);
-                }
-            }
-        }
-        
         // Spawn boss attack
         function spawnBossAttack() {
             for (let i = 0; i < 10; i++) {
@@ -704,7 +722,7 @@
                 
                 const restartBtn = document.createElement('div');
                 restartBtn.className = 'gameOverBtn';
-                restartBtn.textContent = 'Рестарт';
+                restartBtn.textContent = 'Заново';
                 restartBtn.onclick = function() {
                     document.getElementById('gameOverScreen').style.display = 'none';
                     resetGame();
@@ -929,6 +947,8 @@
             const shootBtn = document.getElementById('shootBtn');
             const powerBtn = document.getElementById('powerBtn');
             const pauseBtn = document.getElementById('pauseBtn');
+            const toggleDragBtn = document.getElementById('toggleDragBtn');
+            const toggleControlsBtn = document.getElementById('toggleControlsBtn');
 
             // Обработчики для кнопок управления
             const setupButton = (element, action) => {
@@ -951,115 +971,82 @@
                     e.preventDefault();
                     action(false);
                 });
-                
-                element.addEventListener('mouseleave', (e) => {
-                    e.preventDefault();
-                    action(false);
-                });
             };
 
             setupButton(leftBtn, (state) => { controls.left = state; });
             setupButton(rightBtn, (state) => { controls.right = state; });
             
-            shootBtn.addEventListener('touchstart', (e) => {
+            // Кнопка стрельбы
+            shootBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 shoot();
-            });
-            
-            shootBtn.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                shoot();
-            });
-            
-            powerBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                activatePowerUp();
-            });
-            
-            powerBtn.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                activatePowerUp();
-            });
-            
-            pauseBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (paused) {
-                    resumeGame();
-                } else {
-                    pauseGame();
-                }
-            });
-            
-            pauseBtn.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                if (paused) {
-                    resumeGame();
-                } else {
-                    pauseGame();
-                }
             });
 
-            // Функция для перетаскивания всех кнопок
+            // Кнопка усиления
+            powerBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                activatePowerUp();
+            });
+
+            // Кнопка паузы
+            pauseBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (paused) resumeGame(); else pauseGame();
+            });
+
+            // Функция перетаскивания
             function makeDraggable(element) {
                 let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
                 
-                element.addEventListener('touchstart', dragStart, { passive: false });
                 element.addEventListener('mousedown', dragStart);
-                
+                element.addEventListener('touchstart', dragStart, { passive: false });
+
                 function dragStart(e) {
                     e.preventDefault();
-                    e.stopPropagation();
-                    
-                    if (e.type === 'touchstart') {
-                        pos3 = e.touches[0].clientX;
-                        pos4 = e.touches[0].clientY;
-                    } else {
-                        pos3 = e.clientX;
-                        pos4 = e.clientY;
-                    }
-                    
-                    document.addEventListener('touchmove', dragElement, { passive: false });
-                    document.addEventListener('touchend', closeDragElement);
+                    pos3 = e.clientX || e.touches[0].clientX;
+                    pos4 = e.clientY || e.touches[0].clientY;
                     document.addEventListener('mousemove', dragElement);
+                    document.addEventListener('touchmove', dragElement, { passive: false });
                     document.addEventListener('mouseup', closeDragElement);
+                    document.addEventListener('touchend', closeDragElement);
                 }
-                
+
                 function dragElement(e) {
+                    if (!dragEnabled) return;
                     e.preventDefault();
-                    e.stopPropagation();
-                    
-                    let clientX, clientY;
-                    if (e.type === 'touchmove') {
-                        clientX = e.touches[0].clientX;
-                        clientY = e.touches[0].clientY;
-                    } else {
-                        clientX = e.clientX;
-                        clientY = e.clientY;
-                    }
-                    
-                    pos1 = pos3 - clientX;
-                    pos2 = pos4 - clientY;
-                    pos3 = clientX;
-                    pos4 = clientY;
-                    
+                    pos1 = pos3 - (e.clientX || e.touches[0].clientX);
+                    pos2 = pos4 - (e.clientY || e.touches[0].clientY);
+                    pos3 = e.clientX || e.touches[0].clientX;
+                    pos4 = e.clientY || e.touches[0].clientY;
                     element.style.top = (element.offsetTop - pos2) + "px";
                     element.style.left = (element.offsetLeft - pos1) + "px";
                 }
-                
+
                 function closeDragElement() {
-                    document.removeEventListener('touchmove', dragElement);
-                    document.removeEventListener('touchend', closeDragElement);
                     document.removeEventListener('mousemove', dragElement);
-                    document.removeEventListener('mouseup', closeDragElement);
+                    document.removeEventListener('touchmove', dragElement);
                 }
             }
-            
-            // Делаем все кнопки перетаскиваемыми
+
+            // Делаем кнопки перетаскиваемыми
             makeDraggable(leftBtn);
             makeDraggable(rightBtn);
             makeDraggable(shootBtn);
             makeDraggable(powerBtn);
             makeDraggable(pauseBtn);
+
+            // Кнопка переключения перетаскивания
+            toggleDragBtn.addEventListener('click', function() {
+                dragEnabled = !dragEnabled;
+                this.textContent = dragEnabled ? 'Отключить перетаскивание' : 'Включить перетаскивание';
+            });
+
+            // Кнопка скрытия/показа управляющих кнопок
+            toggleControlsBtn.addEventListener('click', function() {
+                controlsVisible = !controlsVisible;
+                this.textContent = controlsVisible ? 'Скрыть кнопки' : 'Показать кнопки';
+                document.getElementById('gameContainer').classList.toggle('controlsHidden');
+            });
         }
             
         // Setup game over controls
@@ -1141,24 +1128,11 @@
                     };
                 } else {
                     const img = new Image();
-                    // Улучшаем качество текстур для мобильных устройств
                     img.onload = () => {
-                        // Создаем canvas для улучшения качества текстуры
-                        const tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = img.width * 2;
-                        tempCanvas.height = img.height * 2;
-                        const tempCtx = tempCanvas.getContext('2d');
-                        
-                        // Улучшаем качество изображения
-                        tempCtx.imageSmoothingEnabled = true;
-                        tempCtx.webkitImageSmoothingEnabled = true;
-                        tempCtx.mozImageSmoothingEnabled = true;
-                        tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
-                        
                         if (asset.name.startsWith('player')) {
-                            textures.player[asset.name] = tempCanvas;
+                            textures.player[asset.name] = img;
                         } else {
-                            textures[asset.name] = tempCanvas;
+                            textures[asset.name] = img;
                         }
                         assetLoaded();
                     };
@@ -1369,14 +1343,33 @@
         }
         
         // Render game
+        function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        if (!p) {
+            particles.splice(i, 1);
+            continue;
+        }
+        
+        p.x += p.dx;
+        p.y += p.dy;
+        p.life -= 1;
+        
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+}
+        
         function render() {
             ctx.clearRect(0, 0, gameWidth, gameHeight);
             
             if (textures.background) {
-                // Улучшаем качество фона
-                ctx.imageSmoothingEnabled = true;
-                ctx.webkitImageSmoothingEnabled = true;
-                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(textures.background, 0, 0, gameWidth, gameHeight);
             }
             
@@ -1398,10 +1391,6 @@
             }
             
             if (bossActive && warningTimer <= 0 && textures.boss) {
-                // Улучшаем качество босса
-                ctx.imageSmoothingEnabled = true;
-                ctx.webkitImageSmoothingEnabled = true;
-                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.boss,
                     bossPos.x,
@@ -1447,10 +1436,6 @@
                 
                 const texture = bullet.powered ? textures.bulletPowered : textures.bullet;
                 if (texture) {
-                    // Улучшаем качество пуль
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.webkitImageSmoothingEnabled = true;
-                    ctx.mozImageSmoothingEnabled = true;
                     ctx.drawImage(
                         texture,
                         bullet.x,
@@ -1463,11 +1448,6 @@
             
             obstacles.forEach(obstacle => {
                 if (!obstacle || !textures.obstacle) return;
-                
-                // Улучшаем качество препятствий
-                ctx.imageSmoothingEnabled = true;
-                ctx.webkitImageSmoothingEnabled = true;
-                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.obstacle,
                     obstacle.x,
@@ -1479,11 +1459,6 @@
             
             coins.forEach(coin => {
                 if (!coin || !textures.coin) return;
-                
-                // Улучшаем качество монет
-                ctx.imageSmoothingEnabled = true;
-                ctx.webkitImageSmoothingEnabled = true;
-                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.coin,
                     coin.x,
@@ -1495,11 +1470,6 @@
             
             coins2.forEach(coin => {
                 if (!coin || !textures.coin2) return;
-                
-                // Улучшаем качество редких монет
-                ctx.imageSmoothingEnabled = true;
-                ctx.webkitImageSmoothingEnabled = true;
-                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.coin2,
                     coin.x,
@@ -1511,11 +1481,6 @@
             
             bonuses.forEach(bonus => {
                 if (!bonus || !textures.heart) return;
-                
-                // Улучшаем качество бонусов
-                ctx.imageSmoothingEnabled = true;
-                ctx.webkitImageSmoothingEnabled = true;
-                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.heart,
                     bonus.x,
@@ -1554,10 +1519,6 @@
             }
             
             if (playerTexture) {
-                // Улучшаем качество игрока
-                ctx.imageSmoothingEnabled = true;
-                ctx.webkitImageSmoothingEnabled = true;
-                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     playerTexture,
                     playerPos.x,
@@ -1573,10 +1534,6 @@
             
             if (textures.heart) {
                 for (let i = 0; i < lives; i++) {
-                    // Улучшаем качество сердечек
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.webkitImageSmoothingEnabled = true;
-                    ctx.mozImageSmoothingEnabled = true;
                     ctx.drawImage(
                         textures.heart,
                         10 + i * (gameWidth * 0.03),
@@ -1648,7 +1605,7 @@
             canvas.width = gameWidth;
             canvas.height = gameHeight;
             
-            // Улучшаем качество рендеринга на мобильных устройствах
+            // Улучшаем качество рендеринга
             const dpr = window.devicePixelRatio || 1;
             canvas.width = gameWidth * dpr;
             canvas.height = gameHeight * dpr;
@@ -1668,7 +1625,6 @@
                 canvas.width = gameWidth;
                 canvas.height = gameHeight;
                 
-                // Снова применяем улучшение качества при ресайзе
                 const dpr = window.devicePixelRatio || 1;
                 canvas.width = gameWidth * dpr;
                 canvas.height = gameHeight * dpr;
