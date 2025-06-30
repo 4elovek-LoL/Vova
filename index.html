@@ -2,9 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вова охота за яйцами</title>
     <style>
         body {
@@ -14,14 +12,10 @@
             background-color: black;
             font-family: Arial, sans-serif;
             touch-action: manipulation;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
         }
         canvas {
             display: block;
             background-color: black;
-            -webkit-tap-highlight-color: transparent;
         }
 
         a {
@@ -48,7 +42,6 @@
             font-size: 24px;
             z-index: 100;
         }
-        
         #characterSelect {
             position: absolute;
             top: 0;
@@ -236,37 +229,42 @@
             }
         }
         
-        /* Адаптация для iPhone */
-        @media (max-width: 767px) {
+        /* Адаптация для больших планшетов и ландшафтного режима */
+        @media (min-width: 1025px) and (orientation: landscape) {
             #leftBtn, #rightBtn, #shootBtn {
-                width: 60px;
-                height: 60px;
-                font-size: 20px;
-                bottom: 20px;
+                width: 120px;
+                height: 120px;
+                font-size: 36px;
+                bottom: 70px;
             }
             
             #powerBtn, #pauseBtn {
-                width: 50px;
-                height: 50px;
-                font-size: 16px;
+                width: 100px;
+                height: 100px;
+                font-size: 30px;
             }
             
             #leftBtn {
-                left: 15px;
+                left: 70px;
             }
             
             #rightBtn {
-                right: 15px;
+                right: 70px;
+            }
+            
+            #shootBtn {
+                left: 50%;
+                transform: translateX(-50%);
             }
             
             #powerBtn {
-                right: 15px;
-                bottom: 90px;
+                right: 70px;
+                bottom: 210px;
             }
             
             #pauseBtn {
-                right: 15px;
-                bottom: 160px;
+                right: 70px;
+                bottom: 330px;
             }
         }
         
@@ -283,82 +281,9 @@
             margin: 10px;
             cursor: pointer;
         }
-        
-        #iosStart {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            color: white;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            flex-direction: column;
-            text-align: center;
-        }
-        
-        #iosStart button {
-            padding: 15px 30px;
-            font-size: 20px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            margin-top: 20px;
-            cursor: pointer;
-        }
-        
-        #iphoneLoader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            color: white;
-        }
-        
-        #iphoneProgress {
-            width: 80%;
-            height: 20px;
-            background: #333;
-            margin-top: 20px;
-        }
-        
-        #iphoneProgressBar {
-            width: 0%;
-            height: 100%;
-            background: #4CAF50;
-        }
-        
-        #iphoneStatus {
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
-    <div id="iosStart">
-        <h2>Вова охота за яйцами</h2>
-        <p>Нажмите кнопку PLAY для начала игры</p>
-        <button onclick="startIOSGame()">PLAY</button>
-    </div>
-
-    <div id="iphoneLoader">
-        <h2>Загрузка игры...</h2>
-        <div id="iphoneProgress">
-            <div id="iphoneProgressBar"></div>
-        </div>
-        <p id="iphoneStatus">Подготовка ресурсов</p>
-    </div>
-
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         
@@ -383,7 +308,8 @@
         <div id="gameOverScreen">
             <h1>Конец игры!</h1>
             <p id="finalScoreText"></p>
-            <div id="gameOverButtons"></div>
+            <a href="index.html">Нажмите L чтобы начать заново</a>
+            <div id="gameOverButtons" style="display: none;"></div>
         </div>
         
         <div id="pauseScreen">
@@ -440,10 +366,6 @@
         let bestScore = 0;
         let isMobile = false;
         let isTablet = false;
-        let isIOS = false;
-        let isiPhone = false;
-        let gameStarted = false;
-        let assetsLoaded = false;
         
         // Sizes
         let playerSize = 0;
@@ -781,12 +703,12 @@
                 buttonsDiv.innerHTML = '';
                 
                 const restartBtn = document.createElement('div');
-                restartBtn.className = 'gameOverBtn';
-                restartBtn.textContent = 'Заново';
-                restartBtn.onclick = function() {
-                    document.getElementById('gameOverScreen').style.display = 'none';
-                    resetGame();
-                    startGame();
+                 exitBtn.className = 'gameOverBtn';
+                exitBtn.textContent = 'Выход';
+                exitBtn.onclick = function() {
+                    if (confirm('Перезапустить?')) {
+                        window.location.href = 'https://4elovek-lol.github.io/Vova/';
+                    }
                 };
                 
                 const exitBtn = document.createElement('div');
@@ -826,7 +748,7 @@
         
         function resumeGame() {
             paused = false;
-            if (audio.background && gameStarted) {
+            if (audio.background) {
                 audio.background.play().catch(e => console.log("Background music error:", e));
             }
             document.getElementById('pauseScreen').style.display = 'none';
@@ -908,7 +830,7 @@
         
         // Play sound with improved error handling
         function playSound(sound) {
-            if (sound && gameStarted) {
+            if (sound) {
                 try {
                     sound.currentTime = 0;
                     const playPromise = sound.play();
@@ -1143,122 +1065,95 @@
         // Setup game over controls
         function setupGameOverControls() {
             const gameOverScreen = document.getElementById('gameOverScreen');
+            
+            // Убираем обработчик клика по всему экрану
             gameOverScreen.onclick = null;
+            
+            // Добавляем обработчик только для кнопки
+            const restartBtn = document.querySelector('.gameOverBtn');
+            if (restartBtn) {
+                restartBtn.onclick = function() {
+                    window.location.href = 'index.html';
+                };
+            }
         }
         
-        // Load all assets with improved error handling
+        // Load all assets
         function loadAssets() {
-            // Показываем специальный лоадер для iPhone
-            if (isiPhone) {
-                document.getElementById('iphoneLoader').style.display = 'flex';
-            }
-            
-            const version = '1.0.3';
-            const basePath = window.location.href.includes('github.io') ? 
-                'https://4elovek-lol.github.io/Vova/' : '';
-            
             const assets = [
-                { name: 'background', path: basePath + 'image/background.jpg', essential: true },
-                { name: 'player0', path: basePath + 'image/player.png', essential: true },
-                { name: 'player1', path: basePath + 'image/player1.png', essential: false },
-                { name: 'playerRed0', path: basePath + 'image/player_red.png', essential: false },
-                { name: 'playerRed1', path: basePath + 'image/player1_red.png', essential: false },
-                { name: 'playerGreen0', path: basePath + 'image/player_green.png', essential: false },
-                { name: 'playerGreen1', path: basePath + 'image/player1_green.png', essential: false },
-                { name: 'playerBlue0', path: basePath + 'image/player_blue.png', essential: false },
-                { name: 'playerBlue1', path: basePath + 'image/player1_blue.png', essential: false },
-                { name: 'playerBlueRed0', path: basePath + 'image/player_blue_red.png', essential: false },
-                { name: 'playerBlueRed1', path: basePath + 'image/player1_blue_red.png', essential: false },
-                { name: 'playerBlueGreen0', path: basePath + 'image/player_blue_green.png', essential: false },
-                { name: 'playerBlueGreen1', path: basePath + 'image/player1_blue_green.png', essential: false },
-                { name: 'obstacle', path: basePath + 'image/obstacle.png', essential: true },
-                { name: 'coin', path: basePath + 'image/coin.png', essential: true },
-                { name: 'coin2', path: basePath + 'image/coin2.png', essential: false },
-                { name: 'heart', path: basePath + 'image/heart.png', essential: true },
-                { name: 'boss', path: basePath + 'image/boss.png', essential: false },
-                { name: 'bullet', path: basePath + 'image/bullet.png', essential: true },
-                { name: 'bulletPowered', path: basePath + 'image/bullet_blue.png', essential: false },
-                { name: 'icon', path: basePath + 'image/icon.png', essential: false },
-                { name: 'coinSound', path: basePath + 'music/coin.mp3', audio: true, essential: true },
-                { name: 'hitSound', path: basePath + 'music/hit.mp3', audio: true, essential: true },
-                { name: 'bonusSound', path: basePath + 'music/bonus.mp3', audio: true, essential: false },
-                { name: 'gameoverSound', path: basePath + 'music/gameover.mp3', audio: true, essential: true },
-                { name: 'warningSound', path: basePath + 'music/warning.mp3', audio: true, essential: false },
-                { name: 'shootSound', path: basePath + 'music/shoot.mp3', audio: true, essential: true },
-                { name: 'bossDeathSound', path: basePath + 'music/boss_death.mp3', audio: true, essential: false },
-                { name: 'powerupSound', path: basePath + 'music/powerup.mp3', audio: true, essential: false },
-                { name: 'backgroundMusic', path: basePath + 'music/background.mp3', audio: true, essential: false }
+                { name: 'background', path: 'image/background.jpg' },
+                { name: 'player0', path: 'image/player.png' },
+                { name: 'player1', path: 'image/player1.png' },
+                { name: 'playerRed0', path: 'image/player_red.png' },
+                { name: 'playerRed1', path: 'image/player1_red.png' },
+                { name: 'playerGreen0', path: 'image/player_green.png' },
+                { name: 'playerGreen1', path: 'image/player1_green.png' },
+                { name: 'playerBlue0', path: 'image/player_blue.png' },
+                { name: 'playerBlue1', path: 'image/player1_blue.png' },
+                { name: 'playerBlueRed0', path: 'image/player_blue_red.png' },
+                { name: 'playerBlueRed1', path: 'image/player1_blue_red.png' },
+                { name: 'playerBlueGreen0', path: 'image/player_blue_green.png' },
+                { name: 'playerBlueGreen1', path: 'image/player1_blue_green.png' },
+                { name: 'obstacle', path: 'image/obstacle.png' },
+                { name: 'coin', path: 'image/coin.png' },
+                { name: 'coin2', path: 'image/coin2.png' },
+                { name: 'heart', path: 'image/heart.png' },
+                { name: 'boss', path: 'image/boss.png' },
+                { name: 'bullet', path: 'image/bullet.png' },
+                { name: 'bulletPowered', path: 'image/bullet_blue.png' },
+                { name: 'icon', path: 'image/icon.png' },
+                { name: 'coinSound', path: 'music/coin.mp3', audio: true },
+                { name: 'hitSound', path: 'music/hit.mp3', audio: true },
+                { name: 'bonusSound', path: 'music/bonus.mp3', audio: true },
+                { name: 'gameoverSound', path: 'music/gameover.mp3', audio: true },
+                { name: 'warningSound', path: 'music/warning.mp3', audio: true },
+                { name: 'shootSound', path: 'music/shoot.mp3', audio: true },
+                { name: 'bossDeathSound', path: 'music/boss_death.mp3', audio: true },
+                { name: 'powerupSound', path: 'music/powerup.mp3', audio: true },
+                { name: 'backgroundMusic', path: 'music/background.mp3', audio: true }
             ];
             
             let loaded = 0;
-            const totalEssential = assets.filter(a => a.essential).length;
-            const loadTimeout = setTimeout(() => {
-                if (!assetsLoaded) {
-                    document.getElementById('iphoneStatus').textContent = 
-                        "Долгая загрузка. Игра будет запущена с базовыми ресурсами.";
-                    assetsLoaded = true;
-                    finishLoading();
-                }
-            }, 15000); // 15 секунд таймаут
-            
-            function updateProgress() {
-                if (isiPhone) {
-                    const progress = Math.round((loaded / totalEssential) * 100);
-                    document.getElementById('iphoneProgressBar').style.width = progress + '%';
-                    document.getElementById('iphoneStatus').textContent = 
-                        `Загружено ${loaded} из ${totalEssential} основных ресурсов`;
-                }
-            }
-            
-            function finishLoading() {
-                clearTimeout(loadTimeout);
-                document.getElementById('loadingScreen').style.display = 'none';
-                document.getElementById('iphoneLoader').style.display = 'none';
-                setupGame();
-                showCharacterSelect();
-                
-                document.getElementById('char1Preview').src = basePath + 'image/player.png?v=' + version;
-                document.getElementById('char2Preview').src = basePath + 'image/player1.png?v=' + version;
-                
-                // Загружаем несущественные ресурсы после старта
-                if (!isiPhone) {
-                    loadNonEssentialAssets();
-                }
-            }
+            const totalAssets = assets.length;
             
             function assetLoaded() {
                 loaded++;
-                updateProgress();
-                
-                if (loaded >= totalEssential && !assetsLoaded) {
-                    assetsLoaded = true;
-                    finishLoading();
+                if (loaded === totalAssets) {
+                    document.getElementById('loadingScreen').style.display = 'none';
+                    setupGame();
+                    showCharacterSelect();
+                    
+                    document.getElementById('char1Preview').src = 'image/player.png';
+                    document.getElementById('char2Preview').src = 'image/player1.png';
                 }
             }
             
-            // Сначала загружаем только essential ресурсы
-            assets.filter(a => a.essential).forEach(asset => {
+            assets.forEach(asset => {
                 if (asset.audio) {
-                    const sound = new Audio();
-                    sound.preload = 'auto';
-                    sound.src = asset.path + '?v=' + version;
-                    
+                    const sound = new Audio(asset.path);
                     sound.oncanplaythrough = () => {
                         audio[asset.name.replace('Sound', '').replace('Music', '')] = sound;
                         assetLoaded();
                     };
                     sound.onerror = () => {
-                        console.error('Error loading audio:', asset.path);
+                        console.error(`Error loading audio: ${asset.path}`);
                         assetLoaded();
                     };
                 } else {
                     const img = new Image();
+                    // Улучшаем качество текстур для мобильных устройств
                     img.onload = () => {
+                        // Создаем canvas для улучшения качества текстуры
                         const tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = img.width;
-                        tempCanvas.height = img.height;
+                        tempCanvas.width = img.width * 2;
+                        tempCanvas.height = img.height * 2;
                         const tempCtx = tempCanvas.getContext('2d');
-                        tempCtx.drawImage(img, 0, 0);
+                        
+                        // Улучшаем качество изображения
+                        tempCtx.imageSmoothingEnabled = true;
+                        tempCtx.webkitImageSmoothingEnabled = true;
+                        tempCtx.mozImageSmoothingEnabled = true;
+                        tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
                         
                         if (asset.name.startsWith('player')) {
                             textures.player[asset.name] = tempCanvas;
@@ -1268,51 +1163,29 @@
                         assetLoaded();
                     };
                     img.onerror = () => {
-                        console.error('Error loading image:', asset.path);
+                        console.error(`Error loading image: ${asset.path}`);
                         assetLoaded();
                     };
-                    img.src = asset.path + '?v=' + version;
+                    img.src = asset.path;
                 }
             });
         }
         
-        // Загрузка несущественных ресурсов после старта
-        function loadNonEssentialAssets() {
-            // Можно добавить загрузку дополнительных ресурсов здесь
-        }
-        
         // Setup game after assets are loaded
         function setupGame() {
-            // Размеры объектов зависят от устройства
-            if (isiPhone) {
-                playerSize = gameWidth * 0.08;
-                obstacleSize = gameWidth * 0.03;
-                coinSize = gameWidth * 0.04;
-                coin2Size = gameWidth * 0.04;
-                lifeSize = gameWidth * 0.04;
-                bonusSize = gameWidth * 0.05;
-                bossSize = gameWidth * 0.2;
-                bulletSize = gameWidth * 0.02;
-                
-                playerSpeed = gameWidth * 0.01;
-                baseObstacleSpeed = gameHeight * 0.008;
-                bossSpeed = gameHeight * 0.004;
-                bulletSpeed = gameHeight * 0.015;
-            } else {
-                playerSize = gameWidth * 0.04;
-                obstacleSize = gameWidth * 0.015;
-                coinSize = gameWidth * 0.02;
-                coin2Size = gameWidth * 0.02;
-                lifeSize = gameWidth * 0.02;
-                bonusSize = gameWidth * 0.025;
-                bossSize = gameWidth * 0.15;
-                bulletSize = gameWidth * 0.01;
-                
-                playerSpeed = gameWidth * 0.008;
-                baseObstacleSpeed = gameHeight * 0.006;
-                bossSpeed = gameHeight * 0.003;
-                bulletSpeed = gameHeight * 0.01;
-            }
+            playerSize = gameWidth * 0.04;
+            obstacleSize = gameWidth * 0.015;
+            coinSize = gameWidth * 0.02;
+            coin2Size = gameWidth * 0.02;
+            lifeSize = gameWidth * 0.02;
+            bonusSize = gameWidth * 0.025;
+            bossSize = gameWidth * 0.15;
+            bulletSize = gameWidth * 0.01;
+            
+            playerSpeed = gameWidth * 0.008;
+            baseObstacleSpeed = gameHeight * 0.006;
+            bossSpeed = gameHeight * 0.003;
+            bulletSpeed = gameHeight * 0.01;
             
             bestScore = loadBestScore();
             
@@ -1323,9 +1196,7 @@
         
         // Start game loop
         function startGame() {
-            gameStarted = true;
-            
-            if (audio.background && !isiPhone) {
+            if (audio.background) {
                 audio.background.loop = true;
                 audio.background.play().catch(e => console.log("Background music error:", e));
             }
@@ -1502,7 +1373,10 @@
             ctx.clearRect(0, 0, gameWidth, gameHeight);
             
             if (textures.background) {
+                // Улучшаем качество фона
                 ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(textures.background, 0, 0, gameWidth, gameHeight);
             }
             
@@ -1524,7 +1398,10 @@
             }
             
             if (bossActive && warningTimer <= 0 && textures.boss) {
+                // Улучшаем качество босса
                 ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.boss,
                     bossPos.x,
@@ -1570,7 +1447,10 @@
                 
                 const texture = bullet.powered ? textures.bulletPowered : textures.bullet;
                 if (texture) {
+                    // Улучшаем качество пуль
                     ctx.imageSmoothingEnabled = true;
+                    ctx.webkitImageSmoothingEnabled = true;
+                    ctx.mozImageSmoothingEnabled = true;
                     ctx.drawImage(
                         texture,
                         bullet.x,
@@ -1584,7 +1464,10 @@
             obstacles.forEach(obstacle => {
                 if (!obstacle || !textures.obstacle) return;
                 
+                // Улучшаем качество препятствий
                 ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.obstacle,
                     obstacle.x,
@@ -1597,7 +1480,10 @@
             coins.forEach(coin => {
                 if (!coin || !textures.coin) return;
                 
+                // Улучшаем качество монет
                 ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.coin,
                     coin.x,
@@ -1610,7 +1496,10 @@
             coins2.forEach(coin => {
                 if (!coin || !textures.coin2) return;
                 
+                // Улучшаем качество редких монет
                 ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.coin2,
                     coin.x,
@@ -1623,7 +1512,10 @@
             bonuses.forEach(bonus => {
                 if (!bonus || !textures.heart) return;
                 
+                // Улучшаем качество бонусов
                 ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     textures.heart,
                     bonus.x,
@@ -1662,7 +1554,10 @@
             }
             
             if (playerTexture) {
+                // Улучшаем качество игрока
                 ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
                 ctx.drawImage(
                     playerTexture,
                     playerPos.x,
@@ -1678,7 +1573,10 @@
             
             if (textures.heart) {
                 for (let i = 0; i < lives; i++) {
+                    // Улучшаем качество сердечек
                     ctx.imageSmoothingEnabled = true;
+                    ctx.webkitImageSmoothingEnabled = true;
+                    ctx.mozImageSmoothingEnabled = true;
                     ctx.drawImage(
                         textures.heart,
                         10 + i * (gameWidth * 0.03),
@@ -1741,34 +1639,24 @@
             ctx = canvas.getContext('2d');
             
             isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            isTablet = /iPad|Android|Tablet|Silk/i.test(navigator.userAgent);
-            isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            isiPhone = /iPhone|iPod/.test(navigator.userAgent);
+            isTablet = /iPad|Android|Tablet|Silk/i.test(navigator.userAgent) || 
+                      (window.innerWidth >= 768 && window.innerHeight >= 1024) || 
+                      (window.innerWidth >= 1024 && window.innerHeight >= 768);
             
             gameWidth = window.innerWidth;
             gameHeight = window.innerHeight;
-            
-            // Упрощенное масштабирование для iOS
             canvas.width = gameWidth;
             canvas.height = gameHeight;
+            
+            // Улучшаем качество рендеринга на мобильных устройствах
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = gameWidth * dpr;
+            canvas.height = gameHeight * dpr;
+            ctx.scale(dpr, dpr);
             canvas.style.width = gameWidth + 'px';
             canvas.style.height = gameHeight + 'px';
             
-            console.log('Device info:', {
-                isiPhone: isiPhone,
-                isIOS: isIOS,
-                userAgent: navigator.userAgent,
-                width: gameWidth,
-                height: gameHeight
-            });
-            
-            // Для iPhone показываем кнопку PLAY
-            if (isiPhone) {
-                document.getElementById('iosStart').style.display = 'flex';
-            } else {
-                loadAssets();
-            }
-            
+            loadAssets();
             setupGameOverControls();
             
             window.addEventListener('keydown', handleKeyDown);
@@ -1779,6 +1667,12 @@
                 gameHeight = window.innerHeight;
                 canvas.width = gameWidth;
                 canvas.height = gameHeight;
+                
+                // Снова применяем улучшение качества при ресайзе
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = gameWidth * dpr;
+                canvas.height = gameHeight * dpr;
+                ctx.scale(dpr, dpr);
                 canvas.style.width = gameWidth + 'px';
                 canvas.style.height = gameHeight + 'px';
                 
@@ -1786,30 +1680,6 @@
                     setupGame();
                 }
             });
-        }
-        
-        // Функция старта для iPhone
-        function startIOSGame() {
-            document.getElementById('iosStart').style.display = 'none';
-            document.getElementById('iphoneLoader').style.display = 'flex';
-            
-            // Разблокируем аудио
-            const unlockAudio = () => {
-                const sound = new Audio();
-                sound.src = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...';
-                sound.volume = 0;
-                sound.play()
-                    .then(() => {
-                        sound.volume = 1;
-                        loadAssets();
-                    })
-                    .catch(e => {
-                        console.log("Audio unlock error:", e);
-                        loadAssets();
-                    });
-            };
-            
-            unlockAudio();
         }
         
         window.addEventListener('load', init);
