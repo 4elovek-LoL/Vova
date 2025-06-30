@@ -2,7 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Вова охота за яйцами</title>
     <style>
         body {
@@ -12,10 +14,14 @@
             background-color: black;
             font-family: Arial, sans-serif;
             touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
         canvas {
             display: block;
             background-color: black;
+            -webkit-tap-highlight-color: transparent;
         }
 
         a {
@@ -281,9 +287,41 @@
             margin: 10px;
             cursor: pointer;
         }
+        
+        #iosStart {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        #iosStart button {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
+    <div id="iosStart">
+        <h2>Вова охота за яйцами</h2>
+        <p>Нажмите кнопку PLAY для начала игры</p>
+        <button onclick="startIOSGame()">PLAY</button>
+    </div>
+
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         
@@ -366,6 +404,8 @@
         let bestScore = 0;
         let isMobile = false;
         let isTablet = false;
+        let isIOS = false;
+        let gameStarted = false;
         
         // Sizes
         let playerSize = 0;
@@ -703,12 +743,12 @@
                 buttonsDiv.innerHTML = '';
                 
                 const restartBtn = document.createElement('div');
-                 exitBtn.className = 'gameOverBtn';
-                exitBtn.textContent = 'Выход';
-                exitBtn.onclick = function() {
-                    if (confirm('Перезапустить?')) {
-                        window.location.href = 'https://4elovek-lol.github.io/Vova/';
-                    }
+                restartBtn.className = 'gameOverBtn';
+                restartBtn.textContent = 'Заново';
+                restartBtn.onclick = function() {
+                    document.getElementById('gameOverScreen').style.display = 'none';
+                    resetGame();
+                    startGame();
                 };
                 
                 const exitBtn = document.createElement('div');
@@ -748,7 +788,7 @@
         
         function resumeGame() {
             paused = false;
-            if (audio.background) {
+            if (audio.background && gameStarted) {
                 audio.background.play().catch(e => console.log("Background music error:", e));
             }
             document.getElementById('pauseScreen').style.display = 'none';
@@ -830,7 +870,7 @@
         
         // Play sound with improved error handling
         function playSound(sound) {
-            if (sound) {
+            if (sound && gameStarted) {
                 try {
                     sound.currentTime = 0;
                     const playPromise = sound.play();
@@ -1131,6 +1171,7 @@
             assets.forEach(asset => {
                 if (asset.audio) {
                     const sound = new Audio(asset.path);
+                    sound.preload = 'auto';
                     sound.oncanplaythrough = () => {
                         audio[asset.name.replace('Sound', '').replace('Music', '')] = sound;
                         assetLoaded();
@@ -1141,15 +1182,12 @@
                     };
                 } else {
                     const img = new Image();
-                    // Улучшаем качество текстур для мобильных устройств
                     img.onload = () => {
-                        // Создаем canvas для улучшения качества текстуры
                         const tempCanvas = document.createElement('canvas');
                         tempCanvas.width = img.width * 2;
                         tempCanvas.height = img.height * 2;
                         const tempCtx = tempCanvas.getContext('2d');
                         
-                        // Улучшаем качество изображения
                         tempCtx.imageSmoothingEnabled = true;
                         tempCtx.webkitImageSmoothingEnabled = true;
                         tempCtx.mozImageSmoothingEnabled = true;
@@ -1196,7 +1234,9 @@
         
         // Start game loop
         function startGame() {
-            if (audio.background) {
+            gameStarted = true;
+            
+            if (audio.background && !isIOS) {
                 audio.background.loop = true;
                 audio.background.play().catch(e => console.log("Background music error:", e));
             }
@@ -1373,7 +1413,6 @@
             ctx.clearRect(0, 0, gameWidth, gameHeight);
             
             if (textures.background) {
-                // Улучшаем качество фона
                 ctx.imageSmoothingEnabled = true;
                 ctx.webkitImageSmoothingEnabled = true;
                 ctx.mozImageSmoothingEnabled = true;
@@ -1398,7 +1437,6 @@
             }
             
             if (bossActive && warningTimer <= 0 && textures.boss) {
-                // Улучшаем качество босса
                 ctx.imageSmoothingEnabled = true;
                 ctx.webkitImageSmoothingEnabled = true;
                 ctx.mozImageSmoothingEnabled = true;
@@ -1447,7 +1485,6 @@
                 
                 const texture = bullet.powered ? textures.bulletPowered : textures.bullet;
                 if (texture) {
-                    // Улучшаем качество пуль
                     ctx.imageSmoothingEnabled = true;
                     ctx.webkitImageSmoothingEnabled = true;
                     ctx.mozImageSmoothingEnabled = true;
@@ -1464,7 +1501,6 @@
             obstacles.forEach(obstacle => {
                 if (!obstacle || !textures.obstacle) return;
                 
-                // Улучшаем качество препятствий
                 ctx.imageSmoothingEnabled = true;
                 ctx.webkitImageSmoothingEnabled = true;
                 ctx.mozImageSmoothingEnabled = true;
@@ -1480,7 +1516,6 @@
             coins.forEach(coin => {
                 if (!coin || !textures.coin) return;
                 
-                // Улучшаем качество монет
                 ctx.imageSmoothingEnabled = true;
                 ctx.webkitImageSmoothingEnabled = true;
                 ctx.mozImageSmoothingEnabled = true;
@@ -1496,7 +1531,6 @@
             coins2.forEach(coin => {
                 if (!coin || !textures.coin2) return;
                 
-                // Улучшаем качество редких монет
                 ctx.imageSmoothingEnabled = true;
                 ctx.webkitImageSmoothingEnabled = true;
                 ctx.mozImageSmoothingEnabled = true;
@@ -1512,7 +1546,6 @@
             bonuses.forEach(bonus => {
                 if (!bonus || !textures.heart) return;
                 
-                // Улучшаем качество бонусов
                 ctx.imageSmoothingEnabled = true;
                 ctx.webkitImageSmoothingEnabled = true;
                 ctx.mozImageSmoothingEnabled = true;
@@ -1554,7 +1587,6 @@
             }
             
             if (playerTexture) {
-                // Улучшаем качество игрока
                 ctx.imageSmoothingEnabled = true;
                 ctx.webkitImageSmoothingEnabled = true;
                 ctx.mozImageSmoothingEnabled = true;
@@ -1573,7 +1605,6 @@
             
             if (textures.heart) {
                 for (let i = 0; i < lives; i++) {
-                    // Улучшаем качество сердечек
                     ctx.imageSmoothingEnabled = true;
                     ctx.webkitImageSmoothingEnabled = true;
                     ctx.mozImageSmoothingEnabled = true;
@@ -1642,13 +1673,13 @@
             isTablet = /iPad|Android|Tablet|Silk/i.test(navigator.userAgent) || 
                       (window.innerWidth >= 768 && window.innerHeight >= 1024) || 
                       (window.innerWidth >= 1024 && window.innerHeight >= 768);
+            isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             
             gameWidth = window.innerWidth;
             gameHeight = window.innerHeight;
-            canvas.width = gameWidth;
-            canvas.height = gameHeight;
             
-            // Улучшаем качество рендеринга на мобильных устройствах
+            // Улучшаем качество рендеринга
             const dpr = window.devicePixelRatio || 1;
             canvas.width = gameWidth * dpr;
             canvas.height = gameHeight * dpr;
@@ -1656,7 +1687,13 @@
             canvas.style.width = gameWidth + 'px';
             canvas.style.height = gameHeight + 'px';
             
-            loadAssets();
+            // Для iOS показываем стартовый экран
+            if (isIOS) {
+                document.getElementById('iosStart').style.display = 'flex';
+            } else {
+                loadAssets();
+            }
+            
             setupGameOverControls();
             
             window.addEventListener('keydown', handleKeyDown);
@@ -1665,10 +1702,7 @@
             window.addEventListener('resize', () => {
                 gameWidth = window.innerWidth;
                 gameHeight = window.innerHeight;
-                canvas.width = gameWidth;
-                canvas.height = gameHeight;
                 
-                // Снова применяем улучшение качества при ресайзе
                 const dpr = window.devicePixelRatio || 1;
                 canvas.width = gameWidth * dpr;
                 canvas.height = gameHeight * dpr;
@@ -1680,6 +1714,23 @@
                     setupGame();
                 }
             });
+        }
+        
+        // Функция для старта игры на iOS
+        function startIOSGame() {
+            document.getElementById('iosStart').style.display = 'none';
+            loadAssets();
+            
+            // Разблокируем аудио
+            const unlockAudio = () => {
+                const sound = new Audio();
+                sound.src = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...';
+                sound.play().then(() => {
+                    console.log("Audio unlocked");
+                }).catch(e => console.log("Audio unlock error:", e));
+            };
+            
+            document.addEventListener('touchstart', unlockAudio, { once: true });
         }
         
         window.addEventListener('load', init);
