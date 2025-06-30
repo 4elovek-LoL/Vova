@@ -329,8 +329,7 @@
     <script>
         // Game constants
         const LIVES = 3;
-        const TARGET_FPS = 60; // Базовая частота кадров
-        let ACTUAL_FPS = TARGET_FPS; // Реальная частота кадров (может быть 120 на устройствах с 120 Гц)
+        const FPS = 60;
         
         // Game state
         let canvas, ctx;
@@ -367,7 +366,6 @@
         let bestScore = 0;
         let isMobile = false;
         let isTablet = false;
-        let highRefreshRate = false; // Флаг для 120 Гц экранов
         
         // Sizes
         let playerSize = 0;
@@ -419,46 +417,6 @@
             space: false,
             shift: false
         };
-        
-        // Проверка поддержки 120 Гц
-        function checkHighRefreshRate() {
-            // Создаем элемент для тестирования
-            const div = document.createElement('div');
-            div.style.width = '100px';
-            div.style.height = '100px';
-            div.style.position = 'fixed';
-            div.style.top = '-9999px';
-            document.body.appendChild(div);
-            
-            let lastTime = performance.now();
-            let frameCount = 0;
-            let fps = 60;
-            
-            function checkFrame(time) {
-                frameCount++;
-                
-                if (frameCount % 10 === 0) {
-                    const delta = (time - lastTime) / 10;
-                    fps = Math.round(1000 / delta);
-                    lastTime = time;
-                    
-                    if (fps > 100) {
-                        highRefreshRate = true;
-                        ACTUAL_FPS = 120; // Устанавливаем 120 FPS
-                        document.body.removeChild(div);
-                        return;
-                    }
-                }
-                
-                if (frameCount < 60) {
-                    requestAnimationFrame(checkFrame);
-                } else {
-                    document.body.removeChild(div);
-                }
-            }
-            
-            requestAnimationFrame(checkFrame);
-        }
         
         // Load best score from localStorage
         function loadBestScore() {
@@ -650,7 +608,7 @@
                     height: bulletSize
                 });
                 playSound(audio.shoot);
-                shootCooldown = ACTUAL_FPS / 5;
+                shootCooldown = FPS / 5;
             }
         }
         
@@ -716,7 +674,7 @@
         function activatePowerUp() {
             if (powerUpCooldown <= 0 && !poweredUp) {
                 poweredUp = true;
-                powerUpTimer = ACTUAL_FPS * 10;
+                powerUpTimer = FPS * 10;
                 playSound(audio.powerup);
             }
         }
@@ -799,7 +757,7 @@
         // Spawn objects
         function spawnObjects() {
             // Increase difficulty over time
-            if (difficultyTimer > 0 && difficultyTimer % (ACTUAL_FPS * 30) === 0) {
+            if (difficultyTimer > 0 && difficultyTimer % (FPS * 30) === 0) {
                 obstacleSpeedIncrease += 0.2;
             }
             
@@ -812,7 +770,7 @@
                 };
                 bossMaxHealth = 10 + Math.floor(score / 100) * 2;
                 bossHealth = bossMaxHealth;
-                warningTimer = ACTUAL_FPS * 2;
+                warningTimer = FPS * 2;
                 playSound(audio.warning);
             }
             
@@ -1243,23 +1201,13 @@
                 audio.background.play().catch(e => console.log("Background music error:", e));
             }
             
-            let lastTime = performance.now();
-            let accumulator = 0;
-            const timeStep = 1000 / ACTUAL_FPS;
-            
+            let lastTime = 0;
             function gameLoop(timestamp) {
                 if (!paused) {
                     const deltaTime = timestamp - lastTime;
                     lastTime = timestamp;
                     
-                    // Реализация фиксированного шага времени для 120 FPS
-                    accumulator += deltaTime;
-                    
-                    while (accumulator >= timeStep) {
-                        update(timeStep);
-                        accumulator -= timeStep;
-                    }
-                    
+                    update(deltaTime);
                     render();
                 }
                 requestAnimationFrame(gameLoop);
@@ -1270,7 +1218,7 @@
         
         // Update game state
         function update(deltaTime) {
-            const deltaFactor = deltaTime / (1000 / ACTUAL_FPS);
+            const deltaFactor = deltaTime / (1000 / FPS);
             
             difficultyTimer += 1;
             
@@ -1279,7 +1227,7 @@
                 powerUpTimer -= deltaFactor;
                 if (powerUpTimer <= 0) {
                     poweredUp = false;
-                    powerUpCooldown = ACTUAL_FPS * 20;
+                    powerUpCooldown = FPS * 20;
                 }
             }
             if (powerUpCooldown > 0) powerUpCooldown -= deltaFactor;
@@ -1307,7 +1255,7 @@
                     }
                     
                     bossAttackTimer += deltaFactor;
-                    if (bossAttackTimer >= ACTUAL_FPS * 3) {
+                    if (bossAttackTimer >= FPS * 3) {
                         spawnBossAttack();
                         bossAttackTimer = 0;
                     }
@@ -1331,7 +1279,7 @@
                 } else if (detectCollision(playerPos, obstacle, playerSize, obstacleSize)) {
                     playSound(audio.hit);
                     obstacles.splice(i, 1);
-                    damageTimer = ACTUAL_FPS / 2;
+                    damageTimer = FPS / 2;
                     lives -= 1;
                     
                     if (lives <= 0) {
@@ -1393,7 +1341,7 @@
                 } else if (detectCollision(playerPos, bonus, playerSize, bonusSize)) {
                     playSound(audio.bonus);
                     bonuses.splice(i, 1);
-                    bonusTimer = ACTUAL_FPS;
+                    bonusTimer = FPS;
                     
                     if (lives < LIVES) {
                         lives += 1;
@@ -1408,7 +1356,7 @@
             if (bossActive && warningTimer <= 0 && 
                 detectCollision(playerPos, bossPos, playerSize, bossSize)) {
                 playSound(audio.hit);
-                damageTimer = ACTUAL_FPS / 2;
+                damageTimer = FPS / 2;
                 lives -= 1;
                 
                 if (lives <= 0) {
@@ -1648,14 +1596,14 @@
             );
             
             if (poweredUp) {
-                const powerText = `Усиление: ${Math.floor(powerUpTimer / ACTUAL_FPS) + 1}с`;
+                const powerText = `Усиление: ${Math.floor(powerUpTimer / FPS) + 1}с`;
                 ctx.fillText(
                     powerText,
                     gameWidth / 2 - ctx.measureText(powerText).width / 2,
                     gameHeight * 0.05
                 );
             } else if (powerUpCooldown > 0) {
-                const cooldownText = `Перезарядка: ${Math.floor(powerUpCooldown / ACTUAL_FPS) + 1}с`;
+                const cooldownText = `Перезарядка: ${Math.floor(powerUpCooldown / FPS) + 1}с`;
                 ctx.fillText(
                     cooldownText,
                     gameWidth / 2 - ctx.measureText(cooldownText).width / 2,
@@ -1670,7 +1618,7 @@
                 );
             }
             
-            if (difficultyTimer < ACTUAL_FPS * 5) {
+            if (difficultyTimer < FPS * 5) {
                 const controlsText = isMobile || isTablet
                     ? "Тап слева/справа: движение | Тап справа: стрельба" 
                     : "Стрелки: движение | Пробел: стрельба | SHIFT: усиление | ESC: пауза";
@@ -1707,9 +1655,6 @@
             ctx.scale(dpr, dpr);
             canvas.style.width = gameWidth + 'px';
             canvas.style.height = gameHeight + 'px';
-            
-            // Проверяем поддержку 120 Гц
-            checkHighRefreshRate();
             
             loadAssets();
             setupGameOverControls();
