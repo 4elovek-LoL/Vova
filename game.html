@@ -167,26 +167,71 @@
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
             z-index: 20;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
         .control-btn:active {
             background-color: rgba(255, 255, 255, 0.4);
+            transform: scale(0.95);
         }
-        #leftBtn, #rightBtn, #shootBtn {
+        
+        /* Кнопки движения (большие) */
+        #leftBtn, #rightBtn {
             bottom: 30px;
-            width: 80px;
-            height: 80px;
-            font-size: 24px;
+            width: 100px;
+            height: 100px;
+            font-size: 32px;
         }
         #leftBtn { left: 30px; }
         #rightBtn { right: 30px; }
-        #shootBtn { left: 50%; transform: translateX(-50%); }
-        #powerBtn, #pauseBtn {
-            width: 70px;
-            height: 70px;
-            font-size: 20px;
+        
+        /* Кнопка стрельбы (теперь слева от кнопки усиления) */
+        #shootBtn {
+            right: 150px; /* Сдвинута влево */
+            bottom: 150px;
+            width: 100px;
+            height: 100px;
+            font-size: 32px;
+          
         }
-        #powerBtn { right: 30px; bottom: 130px; }
-        #pauseBtn { right: 30px; bottom: 220px; }
+        
+        /* Кнопка усиления (теперь справа от кнопки стрельбы) */
+        #powerBtn {
+            right: 30px; /* Теперь правее кнопки стрельбы */
+            bottom: 150px;
+            width: 100px;
+            height: 100px;
+            font-size: 28px;
+        }
+        
+        /* Кнопка паузы (теперь в самом верху) */
+        #pauseBtn {
+            right: 30px;
+            top: 30px; /* Перемещена в самый верх */
+            bottom: auto;
+            width: 80px;
+            height: 80px;
+            font-size: 24px;
+            background: black
+            color: #333;
+        }
+        
+        /* Адаптация для очень маленьких экранов */
+        @media (max-width: 480px) {
+            #leftBtn, #rightBtn, #shootBtn, #powerBtn {
+                width: 80px;
+                height: 80px;
+                font-size: 28px;
+            }
+            #powerBtn {
+                right: 120px;
+            }
+            #pauseBtn {
+                width: 70px;
+                height: 70px;
+                font-size: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -599,12 +644,28 @@
         }
 
         function resumeGame() {
-            paused = false;
-            if (audio.background) {
-                audio.background.play().catch(e => console.log("Background music error:", e));
+    paused = false;
+    if (audio.background) {
+        audio.background.play().catch(e => console.log("Background music error:", e));
+    }
+    document.getElementById('pauseScreen').style.display = 'none';
+    
+    // Перезапускаем игровой цикл
+    if (!gameOverFlag) {
+        let lastTime = performance.now();
+        function gameLoop(timestamp) {
+            if (!paused && !gameOverFlag) {
+                const deltaTime = timestamp - lastTime;
+                lastTime = timestamp;
+                
+                update(deltaTime);
+                render();
+                animationFrameId = requestAnimationFrame(gameLoop);
             }
-            document.getElementById('pauseScreen').style.display = 'none';
         }
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+}
 
         function spawnObjects() {
             if (difficultyTimer > 0 && difficultyTimer % (FPS * 30) === 0) {
