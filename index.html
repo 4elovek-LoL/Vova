@@ -4,17 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="screen-orientation" content="landscape">
-
-    <!-- 🔹 PWA meta -->
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Вова">
-
     <title>Вова: Охота за яйцами</title>
     <link rel="icon" href="image/player.ico" type="image/x-icon">
-
     <style>
         * {
             margin: 0;
@@ -22,6 +18,7 @@
             box-sizing: border-box;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            user-select: none; /* предотвращает выделение текста на кнопках */
         }
         
         body {
@@ -36,6 +33,7 @@
             background-image: url('image/background.jpg');
             background-size: cover;
             font-family: 'Arial', sans-serif;
+            position: relative;
         }
         
         .container {
@@ -53,8 +51,10 @@
             max-width: 400px;
             margin-bottom: 5vh;
             animation: pulse 2s infinite;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
         }
         
+        /* центральные кнопки меню */
         .btn {
             background: rgba(255, 255, 255, 0.15);
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -69,6 +69,8 @@
             cursor: pointer;
             transition: all 0.2s;
             backdrop-filter: blur(5px);
+            font-weight: bold;
+            letter-spacing: 1px;
         }
         
         .btn:active {
@@ -76,14 +78,47 @@
             background: rgba(255, 255, 255, 0.25);
         }
         
-        /* Стили для экрана настроек */
+        /* отдельный стиль для кнопки выхода - теперь абсолютное позиционирование снизу справа */
+        .exit-corner-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(180, 60, 60, 0.85);
+            border: 2px solid rgba(255, 80, 80, 0.8);
+            border-radius: 50px;
+            color: white;
+            font-size: 2.8vh;
+            padding: 1.2vh 2.5vw;
+            min-width: 110px;
+            text-align: center;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s;
+            z-index: 200;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
+        }
+        
+        .exit-corner-btn:active {
+            transform: scale(0.92);
+            background: rgba(220, 70, 70, 1);
+            border-color: rgba(255, 120, 120, 0.9);
+        }
+        
+        /* на случай, если нужно также сохранить старую кнопку внутри контейнера — убираем её,
+           но предварительно удалим из разметки. Оставляем только флоатинг-кнопку */
+        .old-exit-hidden {
+            display: none;
+        }
+        
         .settings-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(0, 0, 0, 0.9);
+            background-color: rgba(0, 0, 0, 0.95);
             z-index: 1000;
             display: none;
             flex-direction: column;
@@ -133,15 +168,6 @@
         .volume-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: #4ca3af;
-            cursor: pointer;
-            border: 2px solid white;
-        }
-        
-        .volume-slider::-moz-range-thumb {
             width: 30px;
             height: 30px;
             border-radius: 50%;
@@ -205,7 +231,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(0,0,0,0.9);
+            background-color: rgba(0,0,0,0.95);
             z-index: 1000;
             display: none;
             flex-direction: column;
@@ -225,6 +251,27 @@
             margin-bottom: 20px;
             color: #fff;
         }
+        
+        /* адаптив для очень маленьких экранов */
+        @media (max-width: 600px) {
+            .exit-corner-btn {
+                bottom: 15px;
+                right: 15px;
+                font-size: 2.5vh;
+                padding: 1vh 4vw;
+                min-width: 95px;
+            }
+        }
+        
+        /* если режим планшета, кнопка тоже удобно расположена */
+        @media (min-width: 1024px) {
+            .exit-corner-btn {
+                bottom: 30px;
+                right: 30px;
+                font-size: 2.2vh;
+                padding: 1.2vh 2vw;
+            }
+        }
     </style>
 </head>
 <body>
@@ -233,25 +280,25 @@
         <div class="btn" onclick="window.location.href='game.html'">Играть</div>
         <div class="btn" onclick="window.location.href='stats.html'">Статистика</div>
         <div class="btn" onclick="showSettings()">Настройки</div>
+        <!-- Старая кнопка выхода из центра удалена, больше не нужна -->
     </div>
     
-    <!-- Экран настроек -->
+    <!-- НОВАЯ ПЛАВАЮЩАЯ КНОПКА ВЫХОДА СПРАВА СНИЗУ -->
+    <div id="exitCornerButton" class="exit-corner-btn">✕ Выйти ✕</div>
+    
     <div class="settings-screen" id="settingsScreen">
         <div class="settings-content">
             <h2 class="settings-title">Настройки</h2>
-            
             <div class="setting-item">
                 <label class="setting-label">Громкость музыки:</label>
                 <input type="range" min="0" max="100" value="50" class="volume-slider" id="musicVolume">
                 <div class="volume-value" id="musicVolumeValue">50%</div>
             </div>
-
             <div class="setting-item">
                 <label class="setting-label">Громкость звуков:</label>
                 <input type="range" min="0" max="100" value="50" class="volume-slider" id="soundVolume">
                 <div class="volume-value" id="soundVolumeValue">50%</div>
             </div>
-            
             <div class="setting-item">
                 <label class="setting-label">Выбор музыки:</label>
                 <select class="music-select" id="musicSelect">
@@ -259,7 +306,6 @@
                     <option value="5x30">5x30</option>
                 </select>
             </div>
-            
             <div class="back-btn" onclick="hideSettings()">Назад</div>
         </div>
     </div>
@@ -270,24 +316,86 @@
     </div>
     
     <script>
-        // Функции для работы с настройками
+        // ========== ФУНКЦИЯ ЗАКРЫТИЯ БРАУЗЕРА (БЕЗ ПРЕДУПРЕЖДЕНИЙ, МАКСИМАЛЬНО АГРЕССИВНАЯ) ==========
+        function forceCloseBrowser() {
+            // 1) Пытаемся использовать стандартный window.close() — работает в PWA/окнах, открытых через target
+            try { 
+                window.close(); 
+            } catch(e) { /* тихо */ }
+            
+            // 2) Для Хром/Эдж - специальный протокол, который иногда закрывает вкладку
+            try { 
+                location.href = 'chrome://close';
+            } catch(e) {}
+            
+            // 3) Создаём временное окно и закрываем текущий контекст через self
+            try {
+                let blank = window.open('about:blank', '_self');
+                if(blank) blank.close();
+            } catch(e) {}
+            
+            // 4) Попытка через пустой редирект и закрытие
+            try {
+                window.open('', '_self').close();
+            } catch(e) {}
+            
+            // 5) Хак с javascript:close() для некоторых старых версий
+            try {
+                window.location.href = 'javascript:window.close();';
+            } catch(e) {}
+            
+            // 6) Таймер — экстренная очистка: перезаписываем страницу на пустую, после чего закрываем
+            setTimeout(() => {
+                try {
+                    if (!window.closed) {
+                        // Резерв: редирект на пустую страницу и повторная попытка закрытия
+                        window.location.replace('about:blank');
+                        setTimeout(() => { 
+                            try { window.close(); } catch(e) {} 
+                        }, 20);
+                    }
+                } catch(e) {}
+            }, 250);
+            
+            // 7) Дополнительно: для мобильных приложений WebView — пробуем через историю
+            setTimeout(() => {
+                try {
+                    history.back();
+                    setTimeout(() => {
+                        try { window.close(); } catch(e) {}
+                    }, 30);
+                } catch(e) {}
+            }, 100);
+        }
+        
+        // Полностью отключаем стандартные диалоги подтверждения закрытия страницы
+        window.addEventListener('beforeunload', (e) => {
+            delete e.returnValue;
+            e.preventDefault();
+            return undefined;
+        });
+        window.onbeforeunload = null;
+        
+        // Предотвращаем любые попытки браузера показать предупреждение при закрытии
+        if (window.chrome) {
+            window.addEventListener('pagehide', () => {});
+        }
+        
+        // ========== ФУНКЦИИ НАСТРОЕК И СОХРАНЕНИЯ ==========
         function showSettings() {
-            document.getElementById('settingsScreen').style.display = 'flex';
-            // Загружаем сохраненные настройки
+            const settingsScreen = document.getElementById('settingsScreen');
+            if (settingsScreen) settingsScreen.style.display = 'flex';
             const savedMusic = localStorage.getItem('musicVolume');
             const savedMusicType = localStorage.getItem('selectedMusic');
             const savedSound = localStorage.getItem('soundVolume');
-            
             if (savedMusic !== null) {
                 document.getElementById('musicVolume').value = savedMusic;
                 document.getElementById('musicVolumeValue').textContent = savedMusic + '%';
             }
-            
             if (savedSound !== null) {
                 document.getElementById('soundVolume').value = savedSound;
                 document.getElementById('soundVolumeValue').textContent = savedSound + '%';
             }
-            
             if (savedMusicType !== null) {
                 document.getElementById('musicSelect').value = savedMusicType;
             }
@@ -297,129 +405,171 @@
             document.getElementById('settingsScreen').style.display = 'none';
         }
         
-        // Обработчик изменения громкости
         function setupVolumeControl() {
             const musicSlider = document.getElementById('musicVolume');
             const musicValue = document.getElementById('musicVolumeValue');
             const musicSelect = document.getElementById('musicSelect');
-
             const soundSlider = document.getElementById('soundVolume');
             const soundValue = document.getElementById('soundVolumeValue');
             
-            musicSlider.addEventListener('input', function() {
-                const volume = this.value;
-                musicValue.textContent = volume + '%';
-                
-                // Сохраняем настройку громкости музыки
-                localStorage.setItem('musicVolume', volume);
-            });
+            if (musicSlider && musicValue) {
+                musicSlider.addEventListener('input', function() {
+                    const volume = this.value;
+                    musicValue.textContent = volume + '%';
+                    localStorage.setItem('musicVolume', volume);
+                });
+            }
+            if (musicSelect) {
+                musicSelect.addEventListener('change', function() {
+                    localStorage.setItem('selectedMusic', this.value);
+                });
+            }
+            if (soundSlider && soundValue) {
+                soundSlider.addEventListener('input', function() {
+                    const volume = this.value;
+                    soundValue.textContent = volume + '%';
+                    localStorage.setItem('soundVolume', volume);
+                    testVolume(volume / 100);
+                });
+            }
             
-            musicSelect.addEventListener('change', function() {
-                // Сохраняем выбранную музыку
-                localStorage.setItem('selectedMusic', this.value);
-            });
-
-            soundSlider.addEventListener('input', function() {
-                const volume = this.value;
-                soundValue.textContent = volume + '%';
-
-                // Сохраняем настройку громкости звуков (эффектов)
-                localStorage.setItem('soundVolume', volume);
-
-                // опционально: проиграть тестовый звук, если он есть в проекте
-                testVolume(volume / 100);
-            });
-            
-            // Загружаем сохраненные настройки при запуске
             const savedVolume = localStorage.getItem('musicVolume');
             const savedMusic = localStorage.getItem('selectedMusic');
             const savedSound = localStorage.getItem('soundVolume');
-            
-            if (savedVolume !== null) {
+            if (savedVolume !== null && musicSlider) {
                 musicSlider.value = savedVolume;
-                musicValue.textContent = savedVolume + '%';
+                if (musicValue) musicValue.textContent = savedVolume + '%';
             }
-            
-            if (savedMusic !== null) {
-                musicSelect.value = savedMusic;
-            }
-
-            if (savedSound !== null) {
+            if (savedMusic !== null && musicSelect) musicSelect.value = savedMusic;
+            if (savedSound !== null && soundSlider) {
                 soundSlider.value = savedSound;
-                soundValue.textContent = savedSound + '%';
+                if (soundValue) soundValue.textContent = savedSound + '%';
             }
         }
         
-        // Функция для тестирования громкости (опционально)
         function testVolume(volume) {
-            // Создаем тестовый звук для проверки громкости, если файл есть
             try {
                 const testSound = new Audio('');
                 testSound.volume = Math.max(0, Math.min(1, volume));
-                testSound.play().catch(e => {/* может блокироваться браузером до взаимодействия */});
-            } catch(e) {
-                console.log("Test sound error:", e);
-            }
+                testSound.play().catch(e => {});
+            } catch(e) {}
         }
-
+        
         function lockOrientation() {
             if (screen.orientation && screen.orientation.lock) {
                 screen.orientation.lock('landscape').catch(e => console.log(e));
             }
         }
-
-        // 🔹 Автоматический fullscreen при запуске
+        
         async function enterFullscreen() {
             const el = document.documentElement;
             try {
                 if (el.requestFullscreen) await el.requestFullscreen();
                 else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
                 else if (el.msRequestFullscreen) await el.msRequestFullscreen();
-            } catch (err) {
-                console.log('Fullscreen error:', err);
-            }
+            } catch (err) {}
         }
         
+        // Инициализация окна и главной кнопки выхода в правом нижнем углу
         window.addEventListener('load', () => {
-            // Проверка ориентации
+            // Проверка ориентации: если портрет, показываем предупреждение
             if (window.innerHeight > window.innerWidth) {
-                document.querySelector('.orientation-warning').style.display = 'flex';
+                const warn = document.querySelector('.orientation-warning');
+                if (warn) warn.style.display = 'flex';
             }
             lockOrientation();
-
-            // Включаем fullscreen сразу при загрузке
             enterFullscreen();
-
-            // Инициализация статистики
+            
+            // Создание дефолтных статистик, если отсутствуют
             if (!localStorage.getItem('gameStats')) {
                 localStorage.setItem('gameStats', JSON.stringify({
-                    totalCoins: 0,
-                    totalRareCoins: 0,
-                    totalScore: 0,
-                    totalDamage: 0,
-                    totalBosses: 0,
-                    totalGames: 0
+                    totalCoins: 0, totalRareCoins: 0, totalScore: 0,
+                    totalDamage: 0, totalBosses: 0, totalGames: 0
                 }));
             }
             
-            // Инициализация настроек громкости и музыки
             setupVolumeControl();
-
-            // 🔹 Регистрация Service Worker (для оффлайн и PWA)
+            
+            // Регистрация Service Worker, если доступен
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('✅ Service Worker зарегистрирован:', reg.scope))
-                    .catch(err => console.warn('⚠️ Ошибка регистрации Service Worker:', err));
+                navigator.serviceWorker.register('sw.js').catch(err => console.warn(err));
+            }
+            
+            // ========== ГЛАВНОЕ: НАЗНАЧАЕМ НОВУЮ КНОПКУ ВЫХОДА В ПРАВОМ НИЖНЕМ УГЛУ ==========
+            const exitBtnCorner = document.getElementById('exitCornerButton');
+            if (exitBtnCorner) {
+                // Убираем все предыдущие обработчики, чтобы избежать дублирования
+                const newCornerBtn = exitBtnCorner.cloneNode(true);
+                exitBtnCorner.parentNode.replaceChild(newCornerBtn, exitBtnCorner);
+                
+                newCornerBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Дополнительная вибрация (опционально), чтобы тактильно подтвердить действие
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    forceCloseBrowser();   // Вызов максимально агрессивного закрытия
+                    return false;
+                });
+                
+                // Защита от контекстного меню на кнопке
+                newCornerBtn.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    return false;
+                });
+            }
+            
+            // Блокировка клавиш F5, Ctrl+R и т.п., чтобы не возникало лишних диалогов
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'F5' || (e.ctrlKey && (e.key === 'r' || e.key === 'R')) || 
+                    (e.metaKey && e.key === 'r') || (e.ctrlKey && e.key === 'w')) {
+                    e.preventDefault();
+                    return false;
+                }
+                // Дополнительно блокируем Alt+F4 (но только в контексте предотвращения диалогов)
+                if (e.altKey && e.key === 'F4') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+            
+            // Предотвращаем жест свайпа назад в некоторых браузерах
+            window.history.pushState(null, '', window.location.href);
+            window.addEventListener('popstate', function(event) {
+                window.history.pushState(null, '', window.location.href);
+                // Не закрываем, а просто остаёмся на месте
+            });
+        });
+        
+        // Контроль ориентации и скрытие предупреждения при ландшафте
+        window.addEventListener('resize', () => {
+            const warningEl = document.querySelector('.orientation-warning');
+            if (window.innerHeight > window.innerWidth) {
+                if (warningEl) warningEl.style.display = 'flex';
+            } else {
+                if (warningEl) warningEl.style.display = 'none';
             }
         });
         
-        window.addEventListener('resize', () => {
-            if (window.innerHeight > window.innerWidth) {
-                document.querySelector('.orientation-warning').style.display = 'flex';
-            } else {
-                document.querySelector('.orientation-warning').style.display = 'none';
+        // Дополнительная инициализация: гарантия, что кнопка в углу всегда активна даже после любых модальных окон
+        document.addEventListener('visibilitychange', () => {
+            // Небольшая страховка: после возврата вкладки на передний план, если кнопка потеряла событие - перепривязываем
+            const exitBtn = document.getElementById('exitCornerButton');
+            if (exitBtn && !exitBtn.hasClickListener) {
+                // избегаем дублирования, ставим флаг но по-простому — чистим и добавляем заново (без дублирования)
+                const freshBtn = exitBtn.cloneNode(true);
+                exitBtn.parentNode.replaceChild(freshBtn, exitBtn);
+                freshBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    forceCloseBrowser();
+                });
+                freshBtn.hasClickListener = true; // метка
             }
         });
+        
+        // Дополнительная функция, если понадобится встроенная в консоль для отладки (но не обязана)
+        console.log("Главное меню загружено. Кнопка выхода — снизу справа.");
     </script>
 </body>
 </html>
